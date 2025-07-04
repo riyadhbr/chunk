@@ -10,9 +10,9 @@ from io import StringIO, BytesIO
 from sklearn.preprocessing import normalize
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.models import Distance, VectorParams
-from sentence_transformers import SentenceTransformer
+
 from openai import AsyncOpenAI  
-os.environ['HF_TOKEN'] = ''  
+  
 
 
 class TabularDocumentProcessor:
@@ -29,7 +29,7 @@ class TabularDocumentProcessor:
         return pd.read_excel(BytesIO(content))
 
     # imbedding with OpenAi
-    """
+    
     @staticmethod  
     async def generate_embeddings(texts, client: AsyncOpenAI):
         responses = await asyncio.gather(*[
@@ -38,12 +38,8 @@ class TabularDocumentProcessor:
     ])
         embeddings = [res.data[0].embedding for res in responses]
         return normalize(np.array(embeddings)).tolist()
-                 """
-    # imbedding with Transformer
-    @staticmethod
-    async def generate_embeddings(texts, model):
-        embeddings = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
-        return normalize(embeddings).tolist()
+        
+    
               
     @staticmethod
     async def store_embeddings(embeddings, rows, doc_name, qdrant_client, collection_name):
@@ -68,7 +64,7 @@ class TabularDocumentProcessor:
 
     """async def process_tabular_files(folder_path, qdrant_client, collection_name, client):""" # if use openAI embedding
     @staticmethod
-    async def process_tabular_files(folder_path, qdrant_client, collection_name, model):
+    async def process_tabular_files(folder_path, qdrant_client, collection_name, client):
         for file_name in os.listdir(folder_path):
             if file_name.endswith(('.csv', '.xlsx')):
                 full_path = os.path.join(folder_path, file_name)
@@ -79,8 +75,8 @@ class TabularDocumentProcessor:
 
                 rows = [{str(k): v for k, v in row.items()} for row in df.to_dict(orient='records')]
                 texts = [json.dumps(row, ensure_ascii=False) for row in rows]
-                embeddings = await TabularDocumentProcessor.generate_embeddings(texts, model)      # imbedding with Transformer
-                """embeddings = await TabularDocumentProcessor.generate_embeddings(texts, client)"""      # imbedding with OpenAi
+                
+                embeddings = await TabularDocumentProcessor.generate_embeddings(texts, client)    # imbedding with OpenAi
                 await TabularDocumentProcessor.store_embeddings(
                     embeddings, rows, os.path.splitext(file_name)[0], qdrant_client, collection_name
                 )
@@ -95,18 +91,15 @@ if __name__ == '__main__':
         client = AsyncOpenAI(api_key='')
         # Qdrant و الموديل
         qdrant_client = AsyncQdrantClient(host="localhost", port=6333)
-        
-        model = SentenceTransformer(
-            "HIT-TMG/KaLM-embedding-multilingual-mini-instruct-v1",
-            token=os.environ['HF_TOKEN']
-        )
+
+
 
         # تنفيذ المعالجة
         await TabularDocumentProcessor.process_tabular_files(
             folder_path=folder_path,
             qdrant_client=qdrant_client,
             collection_name=collection_name,
-            model=model,
+
             client=client
         )
 

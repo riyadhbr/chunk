@@ -12,8 +12,7 @@ from sentence_transformers import SentenceTransformer
 from openai import AsyncOpenAI
 from qdrant_client import AsyncQdrantClient
 
-os.environ['TF_USE_LEGACY_KERAS'] = '1'
-os.environ['HF_TOKEN'] = ''  # توكن هاغينغ فيس
+
 
 class TextDocumentProcessor:
 
@@ -60,14 +59,9 @@ class TextDocumentProcessor:
         content = response.choices[0].message.content
         return [f"Title: {c['title']}\n{c['txt']}" for c in json.loads(content)]
 
-    # imbedding with Transformer
-    @staticmethod  
-    async def generate_embeddings(text_chunks, model: SentenceTransformer):
-        embeddings = model.encode(text_chunks, show_progress_bar=True, convert_to_numpy=True)
-        return normalize(embeddings).tolist()
     
     # imbedding with OpenAi
-    """
+    
     @staticmethod 
     async def generate_embeddings(text_chunks, client: AsyncOpenAI):
         responses = await asyncio.gather(*[
@@ -76,7 +70,7 @@ class TextDocumentProcessor:
     ])
         embeddings = [res.data[0].embedding for res in responses]
         return normalize(np.array(embeddings)).tolist()
-    """
+    
 
     @staticmethod
     async def store_embeddings(embeddings, chunks, doc_name, qdrant_client: AsyncQdrantClient, collection_name: str):
@@ -106,7 +100,7 @@ class TextDocumentProcessor:
         print(f"Stored {len(points)} items from {doc_name} into Qdrant.")
 
     @staticmethod
-    async def process_text_files(folder_path: str, qdrant_client: AsyncQdrantClient, collection_name: str, model: SentenceTransformer, client: AsyncOpenAI):
+    async def process_text_files(folder_path: str, qdrant_client: AsyncQdrantClient, collection_name: str,  client: AsyncOpenAI):
         for file_name in os.listdir(folder_path):
             if file_name.endswith(('.txt', '.pdf')):
                 full_path = os.path.join(folder_path, file_name)
@@ -117,8 +111,8 @@ class TextDocumentProcessor:
                     else TextDocumentProcessor.read_pdf(full_path)
                 )
                 chunks = await TextDocumentProcessor.chunk_text(text, client)
-                embeddings = await TextDocumentProcessor.generate_embeddings(chunks, model)         # imbedding with Transformer
-                """embeddings = await TextDocumentProcessor.generate_embeddings(chunks, client)"""  # imbedding with OpenAi
+
+                embeddings = await TextDocumentProcessor.generate_embeddings(chunks, client)
                 await TextDocumentProcessor.store_embeddings(embeddings, chunks, doc_name, qdrant_client, collection_name)
 
 # ✅ طريقة الاستخدام
@@ -126,13 +120,13 @@ if __name__ == "__main__":
     async def main():
         val_uuid='uuid'
         qdrant = AsyncQdrantClient(host="localhost", port=6333)
-        model = SentenceTransformer("HIT-TMG/KaLM-embedding-multilingual-mini-instruct-v1", token=os.environ['HF_TOKEN'])
+
         client = AsyncOpenAI(api_key='')
         await TextDocumentProcessor.process_text_files(
             folder_path="docs",
             qdrant_client=qdrant,
             collection_name=f"{val_uuid}_txt_pdf",
-            model=model,
+
             client=client
         )
 

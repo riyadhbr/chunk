@@ -1,0 +1,7 @@
+aiofiles
+numpy
+pandas
+scikit-learn
+qdrant-client[http]
+openai
+PyPDF2

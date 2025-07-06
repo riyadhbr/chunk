@@ -33,10 +33,33 @@ class TextDocumentProcessor:
     
 
     @staticmethod
+    @staticmethod
     async def chunk_text(text, client: AsyncOpenAI):
+        function_schema = {
+        "name": "split_into_chunks",
+        "description": "Split the text below into logical chunks based on section titles.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "chunks": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "txt": {"type": "string"}
+                        },
+                        "required": ["title", "txt"]
+                    }
+                }
+            },
+            "required": ["chunks"]
+        }
+    }
         prompt = f"""Split the text below into logical chunks based on section titles.
         Requirements:
         - Do NOT rewrite or remove any part of the text.
+        - Output must be deterministic and consistent for the same input.
         - Each chunk must include:
             - "title": actual title or brief inferred label.
             - "txt": full, unmodified text under that title/topic.
@@ -54,10 +77,15 @@ class TextDocumentProcessor:
         response = await client.chat.completions.create(
             model="gpt-4.1-nano-2025-04-14",
             messages=[{"role": "user", "content": prompt}],
+            tools=[{"type": "function", "function": function_schema}],
+            tool_choice={"type": "function", "function": {"name": "split_into_chunks"}},
             temperature=0.0
-        )
-        content = response.choices[0].message.content
-        return [f"Title: {c['title']}\n{c['txt']}" for c in json.loads(content)]
+    )
+
+    # استخراج الناتج الجاهز مباشرة بدون json.loads
+        args = response.choices[0].message.tool_calls[0].function.arguments
+        parsed = json.loads(args)
+        return [f"Title: {c['title']}\n{c['txt']}" for c in parsed['chunks']]
 
     
     # imbedding with OpenAi

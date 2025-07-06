@@ -32,7 +32,7 @@ class TextDocumentProcessor:
 
     
 
-    @staticmethod
+    
     @staticmethod
     async def chunk_text(text, client: AsyncOpenAI):
         function_schema = {

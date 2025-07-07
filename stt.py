@@ -19,7 +19,7 @@ async def transcribe_audio_file(filepath: str) -> str:
 # مثال على الاستخدام
 if __name__ == "__main__":
     async def main():
-        path = "output.wav"  # ضع مسار الملف هنا
+        path = "output.mp3"  # only mp3 m4a ogg
         await transcribe_audio_file(path)
         
 

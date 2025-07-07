@@ -193,13 +193,7 @@ class StaticRAGSystem:
         await StaticRAGSystem.init_graph()
 
         async for event in StaticRAGSystem.react_graph.astream(state, {"recursion_limit": 4}):
-            final_event = event
-            print(final_event)
             if "reasoner" in event and event["reasoner"].get("messages"):
-                token_usage = event["reasoner"]["messages"][0].response_metadata.get("token_usage")
-                if token_usage:
-                    with open("token_usage.json", "w") as f:
-                        json.dump(token_usage, f, indent=2)
                 messages.extend(event["reasoner"]["messages"])
 
         reply = messages[-1].content
